@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postura – Work Session</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/logo.css" />
+  <link rel="stylesheet" href="/static/profile.css" />
+  <link rel="stylesheet" href="/static/work_session.css" />
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    {% include "_sidebar_logo.html" %}
+
+    <div class="sidebar-user">
+      <div class="user-avatar">
+        {{ user.full_name[0] }}{{ user.full_name.split(' ')[1][0] if ' ' in user.full_name else '' }}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ user.full_name }}</div>
+        <div class="user-email">{{ user.username }}</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-item{% if active_page == 'dashboard' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="/work-session" class="nav-item{% if active_page == 'work_session' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Work Session
+      </a>
+      <a href="/summary" class="nav-item{% if active_page == 'summary' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Summary
+      </a>
+      <a href="/profile" class="nav-item{% if active_page == 'profile' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profile
+      </a>
+    </nav>
+
+    <div class="sidebar-sensor">
+      <div class="sensor-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+        </svg>
+      </div>
+      <div class="sensor-info">
+        <div class="sensor-name">ESP32 Sensor</div>
+        <div class="sensor-status" id="sensor-status">Connecting...</div>
+      </div>
+      <div class="sensor-dot" id="sensor-dot"></div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">Work Session</h1>
+      <p class="page-subtitle">Set your session duration and start tracking.</p>
+    </div>
+
+    <!-- Calibrate Banner -->
+    <div class="calibrate-banner">
+      <div class="calibrate-top">
+        <div class="calibrate-icon-wrap">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+        </div>
+        <div class="calibrate-text">
+          <div class="calibrate-title">Calibrate Your Posture</div>
+          <div class="calibrate-subtitle">Sit in your ideal posture and press the button below to set your baseline. This helps the sensor accurately detect when you slouch.</div>
+        </div>
+      </div>
+
+      <div class="posture-guide">
+        <div class="guide-label">Posture States Guide:</div>
+        <div class="guide-cards">
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+              <span class="guide-card-title good">Good Posture</span>
+            </div>
+            <div class="guide-card-desc">Back straight, shoulders back</div>
+          </div>
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                <polyline points="2 12 8 6 14 12 20 6"/>
+              </svg>
+              <span class="guide-card-title leaning">Leaning</span>
+            </div>
+            <div class="guide-card-desc">Slight forward lean detected</div>
+          </div>
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="guide-card-title slouching">Severe Slouching</span>
+            </div>
+            <div class="guide-card-desc">Poor posture, high deviation</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="calibrate-btn" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        Calibrate Good Posture
+      </button>
+    </div>
+
+    <!-- Bottom Grid -->
+    <div class="ws-grid">
+
+      <!-- Left: Timer Card -->
+      <div class="card timer-card">
+        <div class="timer-circle">
+          <svg class="timer-clock-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div class="timer-value">30m</div>
+          <div class="timer-label">duration</div>
+        </div>
+        <button class="start-btn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Start Session
+        </button>
+      </div>
+
+      <!-- Right Column -->
+      <div class="ws-right-col">
+
+        <!-- Session Duration Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="card-title">Session Duration</span>
+            </div>
+          </div>
+
+          <div class="duration-btns">
+            <button class="dur-btn" type="button">15m</button>
+            <button class="dur-btn active" type="button">30m</button>
+            <button class="dur-btn" type="button">45m</button>
+            <button class="dur-btn" type="button">60m</button>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Custom</span>
+          </div>
+        </div>
+
+        <!-- Session Settings Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span class="card-title">Session Settings</span>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                  <rect x="2" y="9" width="4" height="12"/><rect x="9" y="5" width="4" height="16"/>
+                  <rect x="16" y="1" width="4" height="20"/>
+                </svg>
+              </div>
+              <div>
+                <div class="setting-title">Vibration / Buzzer Alerts</div>
+                <div class="setting-desc">Haptic feedback on bad posture</div>
+              </div>
+            </div>
+            <div class="toggle on" role="button" tabindex="0" aria-label="Toggle vibration alerts"></div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </div>
+              <div>
+                <div class="setting-title">End-of-Session Reminder</div>
+                <div class="setting-desc">Notify when time is up</div>
+              </div>
+            </div>
+            <div class="toggle on" role="button" tabindex="0" aria-label="Toggle end-of-session reminder"></div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                </svg>
+              </div>
+              <div>
+                <div class="setting-title">Exercise Suggestions</div>
+                <div class="setting-desc">Show stretches after session</div>
+              </div>
+            </div>
+            <div class="toggle on" role="button" tabindex="0" aria-label="Toggle exercise suggestions"></div>
+          </div>
+        </div>
+
+        <!-- Posture Tips Card -->
+        <div class="tips-card">
+          <div class="tips-header">
+            <span class="tips-bulb">💡</span>
+            <span class="tips-title">Posture Tips</span>
+          </div>
+          <ul class="tips-list">
+            <li>Keep your back straight and shoulders back</li>
+            <li>Screen should be at eye level, ~50cm away</li>
+            <li>Feet flat on the floor, knees at 90°</li>
+            <li>Take a 5-min break every 30 minutes</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/dashboard.js"></script>
+  <script src="/static/work_session.js"></script>
+</body>
+</html>

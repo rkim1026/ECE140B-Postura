@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postura – Profile & Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/logo.css" />
+  <link rel="stylesheet" href="/static/profile.css" />
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    {% include "_sidebar_logo.html" %}
+
+    <div class="sidebar-user">
+      <div class="user-avatar">
+        {{ user.full_name[0] }}{{ user.full_name.split(' ')[1][0] if ' ' in user.full_name else '' }}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ user.full_name }}</div>
+        <div class="user-email">{{ user.username }}</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-item{% if active_page == 'dashboard' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="/work-session" class="nav-item{% if active_page == 'work_session' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Work Session
+      </a>
+      <a href="/summary" class="nav-item{% if active_page == 'summary' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Summary
+      </a>
+      <a href="/profile" class="nav-item{% if active_page == 'profile' %} active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profile
+      </a>
+    </nav>
+
+    <div class="sidebar-sensor">
+      <div class="sensor-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+        </svg>
+      </div>
+      <div class="sensor-info">
+        <div class="sensor-name">ESP32 Sensor</div>
+        <div class="sensor-status">Connected</div>
+      </div>
+      <div class="sensor-dot"></div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">Profile &amp; Settings</h1>
+      <p class="page-subtitle">Manage your account and device preferences.</p>
+    </div>
+
+    <div class="content-grid">
+      <!-- Left Column -->
+      <div class="left-col">
+
+        <!-- Profile Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span class="card-title">Profile</span>
+            </div>
+            <button class="edit-btn" aria-label="Edit profile">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-avatar">
+              {{ user.full_name[0] }}{{ user.full_name.split(' ')[1][0] if ' ' in user.full_name else '' }}
+            </div>
+            <div class="profile-details">
+              <div class="profile-name">{{ user.full_name }}</div>
+              <div class="profile-email">{{ user.username }}</div>
+              <div class="profile-org">{{ user.username.split('@')[1].split('.')[0] | upper if '@' in user.username else '—' }}</div>
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-value">—</div>
+              <div class="stat-label">Sessions</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ stats.good_pct if stats else '—' }}</div>
+              <div class="stat-label">Avg Score</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">8 days</div>
+              <div class="stat-label">Best Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Device Connection Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+              </svg>
+              <span class="card-title">Device Connection</span>
+            </div>
+          </div>
+
+          <div class="device-connected">
+            <div class="device-wifi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+              </svg>
+            </div>
+            <div class="device-text">
+              <div class="device-name">ESP32 Postura Sensor</div>
+              <div class="device-connection">Connected via Bluetooth</div>
+            </div>
+            <div class="device-indicator"></div>
+          </div>
+
+          <div class="device-stats">
+            <div class="device-stat">
+              <svg class="device-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="7" width="18" height="11" rx="2"/>
+                <path d="M22 11v3"/>
+              </svg>
+              <div class="device-stat-value">87%</div>
+              <div class="device-stat-label">Battery</div>
+            </div>
+            <div class="device-stat">
+              <svg class="device-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="1" y1="6" x2="1" y2="18"/><line x1="6" y1="10" x2="6" y2="18"/>
+                <line x1="11" y1="13" x2="11" y2="18"/><line x1="16" y1="16" x2="16" y2="18"/>
+              </svg>
+              <div class="device-stat-value">Strong</div>
+              <div class="device-stat-label">Signal</div>
+            </div>
+            <div class="device-stat">
+              <svg class="device-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <div class="device-stat-value">v2.1.4</div>
+              <div class="device-stat-label">Firmware</div>
+            </div>
+          </div>
+
+          <button class="disconnect-btn">Disconnect Device</button>
+        </div>
+
+        <!-- Past Sessions Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="card-title">Past Sessions</span>
+            </div>
+            <a href="/summary" class="view-all">View all <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></a>
+          </div>
+
+          <div class="session-list">
+            <div class="session-item">
+              <div class="session-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="session-info">
+                <div class="session-date">Today</div>
+                <div class="session-meta">2h 54m session · 77% good posture</div>
+              </div>
+              <div class="session-score score-blue">82</div>
+              <svg class="session-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <div class="session-item">
+              <div class="session-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="session-info">
+                <div class="session-date">Yesterday</div>
+                <div class="session-meta">1h 45m session · 71% good posture</div>
+              </div>
+              <div class="session-score score-gray">75</div>
+              <svg class="session-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <div class="session-item">
+              <div class="session-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="session-info">
+                <div class="session-date">Mon, Apr 27</div>
+                <div class="session-meta">3h 10m session · 85% good posture</div>
+              </div>
+              <div class="session-score score-green">88</div>
+              <svg class="session-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+
+        <!-- Alert Frequency Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span class="card-title">Alert Frequency</span>
+            </div>
+          </div>
+
+          <div class="alert-toggle">
+            <button class="toggle-btn">Low</button>
+            <button class="toggle-btn active">Medium</button>
+            <button class="toggle-btn">High</button>
+          </div>
+          <p class="alert-description">Alerts every 5 minutes of bad posture.</p>
+        </div>
+
+        <!-- Daily Posture Goal Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+              <span class="card-title">Daily Posture Goal</span>
+            </div>
+          </div>
+
+          <div class="goal-row">
+            <span class="goal-label">Good Posture Target</span>
+            <span class="goal-value">75%</span>
+          </div>
+
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 75%"></div>
+            <div class="slider-thumb" style="left: calc(75% - 10px)"></div>
+          </div>
+
+          <div class="goal-message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="6"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+            <span>You're aiming for <strong>75%</strong> good posture each day. That's a great starting goal!</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-bar">
+      <button class="save-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Save All Settings
+      </button>
+    </div>
+  </main>
+
+</body>
+</html>

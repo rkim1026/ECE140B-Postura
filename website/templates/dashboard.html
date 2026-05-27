@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postura – Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/logo.css" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body">
+
+  <aside class="sidebar">
+    {% include "_sidebar_logo.html" %}
+
+    <div class="sidebar-user">
+      <div class="avatar" id="user-initials">
+        {{ user.full_name[0] }}{{ user.full_name.split(' ')[1][0] if ' ' in user.full_name else '' }}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ user.full_name }}</div>
+        <div class="user-email">{{ user.username }}</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-item{% if active_page == 'dashboard' %} active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="/work-session" class="nav-item{% if active_page == 'work_session' %} active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Work Session
+      </a>
+      <a href="/summary" class="nav-item{% if active_page == 'summary' %} active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Summary
+      </a>
+      <a href="/profile" class="nav-item{% if active_page == 'profile' %} active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profile
+      </a>
+    </nav>
+
+    <div class="sidebar-sensor">
+      <div class="sensor-dot connecting" id="sensor-dot"></div>
+      <div>
+        <div class="sensor-name">ESP32 Sensor</div>
+        <div class="sensor-status connecting" id="sensor-status">Connecting...</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div class="greeting">
+        <div class="greeting-sub" id="time-greeting">Good evening!</div>
+        <div class="greeting-name">{{ user.full_name.split(' ')[0] }} 👋</div>
+      </div>
+      <div class="topbar-right">
+        <div class="session-badge">
+          <span class="session-dot"></span> No Session
+        </div>
+        <div class="date-badge" id="current-date">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px; margin-right: 5px;">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          </div>
+      </div>
+    </header>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-dot green"></span><span class="stat-pct green">{{ stats.good_pct }}%</span></div>
+        <div class="stat-value">{{ stats.good_time }}</div>
+        <div class="stat-label">Good Posture</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-dot yellow"></span><span class="stat-pct yellow">{{ stats.leaning_pct }}%</span></div>
+        <div class="stat-value">{{ stats.leaning_time }}</div>
+        <div class="stat-label">Leaning</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-dot red"></span><span class="stat-pct red">{{ stats.severe_pct }}%</span></div>
+        <div class="stat-value">{{ stats.severe_time }}</div>
+        <div class="stat-label">Severe Slouch</div>
+      </div>
+    </div>
+
+    <div class="mid-row">
+
+      <div class="score-card card-box">
+        <div class="card-header">
+          <span class="card-title">Today's Score</span>
+          <span class="badge-great">Great</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="donutChart" width="160" height="160"></canvas>
+          <div class="donut-label">
+            <div class="donut-pct" style="color: {% if stats.good_pct > 70 %}#22c55e{% elif stats.good_pct > 40 %}#eab308{% else %}#ef4444{% endif %};">
+              {{ stats.good_pct if stats else 0 }}%
+            </div>
+            <div class="donut-sub">Good Posture</div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-row">
+              <span class="leg-dot green"></span> Good Posture 
+              <span class="leg-val">{{ stats.good_pct if stats else 0 }}%</span>
+          </div>
+          <div class="legend-row">
+              <span class="leg-dot yellow"></span> Leaning 
+              <span class="leg-val">{{ stats.leaning_pct if stats else 0 }}%</span>
+          </div>
+          <div class="legend-row">
+              <span class="leg-dot red"></span> Severe 
+              <span class="leg-val">{{ stats.severe_pct if stats else 0 }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card card-box">
+        <div class="card-header">
+          <span class="card-title">Posture Quality Over Time</span>
+          <div class="chart-tabs">
+            <button class="chart-tab active">Today</button>
+            <button class="chart-tab">Week</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+
+      <div class="alerts-card card-box">
+        <div class="card-header">
+          <span class="card-title">Recent Alerts <span class="badge-count">5 today</span></span>
+          <a href="/summary" class="view-all">View all ›</a>
+        </div>
+        <div class="alerts-list">
+          {% for alert in stats.alerts %}
+          <div class="alert-item {{ alert.type }}-bg">
+            <span class="alert-msg">{{ alert.msg }}</span>
+            <span class="alert-time">{{ alert.time }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="start-session-card">
+          <div class="start-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <div class="start-title">Start a Session</div>
+          <div class="start-sub">Begin tracking your posture in real-time.</div>
+          <a href="/work-session" class="start-btn">Start Now ›</a>
+        </div>
+
+        <div class="streak-card card-box">
+          <div class="streak-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="card-title">Weekly Streak</span>
+          </div>
+          <div class="streak-days">
+            <div class="streak-day yellow-day"><span>M</span></div>
+            <div class="streak-day green-day"><span>T</span></div>
+            <div class="streak-day green-day"><span>W</span></div>
+            <div class="streak-day yellow-day"><span>T</span></div>
+            <div class="streak-day green-day"><span>F</span></div>
+            <div class="streak-day green-day"><span>S</span></div>
+            <div class="streak-day blue-day"><span>T</span></div>
+          </div>
+          <div class="streak-label">🔥 <strong>5-day streak!</strong></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    window.DASHBOARD_DATA = {
+        // Order: [Good, Leaning, Severe] to match Chart.js colors
+        donut: [
+            {{ stats.good_pct if stats else 0 }}, 
+            {{ stats.leaning_pct if stats else 0 }}, 
+            {{ stats.severe_pct if stats else 0 }}
+        ],
+        // The line chart data from your CSV resampling
+        line: {{ stats.chart_data | tojson if stats else [] }},
+        labels: {{ stats.chart_labels | tojson if stats else [] }}
+    };
+  </script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

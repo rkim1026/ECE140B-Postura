@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postura – Session Summary</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/logo.css">
+<link rel="stylesheet" href="/static/postura-summary.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  {% include "_sidebar_logo.html" %}
+
+  <div class="sidebar-user">
+    <div class="user-avatar">
+      {{ user.full_name[0] }}{{ user.full_name.split(' ')[1][0] if ' ' in user.full_name else '' }}
+    </div>
+    <div>
+      <div class="user-name">{{ user.full_name }}</div>
+      <div class="user-email">{{ user.username }}</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="nav-item{% if active_page == 'dashboard' %} active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+      Dashboard
+    </a>
+    <a href="/work-session" class="nav-item{% if active_page == 'work_session' %} active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      Work Session
+    </a>
+    <a href="/summary" class="nav-item{% if active_page == 'summary' %} active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Summary
+    </a>
+    <a href="/profile" class="nav-item{% if active_page == 'profile' %} active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Profile
+    </a>
+  </nav>
+
+  <div class="sidebar-sensor">
+    <div class="sensor-row">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+        <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <circle cx="12" cy="20" r="1" fill="#16a34a"/>
+      </svg>
+      <div>
+        <div class="sensor-name">ESP32 Sensor</div>
+        <div class="sensor-status">Connected</div>
+      </div>
+      <div class="sensor-dot"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Session Summary</div>
+      <div class="page-date">{{ today }}</div>
+    </div>
+    <a href="/work-session" class="btn-new-session">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+        <path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38"/>
+      </svg>
+      New Session
+    </a>
+  </div>
+
+  <!-- Score + Breakdown -->
+  <div class="content-grid">
+
+    <!-- Left: Score -->
+    <div>
+      <div class="score-card">
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 160 160">
+            <circle class="ring-bg" cx="80" cy="80" r="70"/>
+            <circle class="ring-fill" cx="80" cy="80" r="70"/>
+          </svg>
+          <div class="score-inner">
+            <div class="score-number">{{ stats.good_pct if stats else 0 }}</div>
+            <div class="score-of">out of 100</div>
+          </div>
+        </div>
+        <div class="score-badge">Great</div>
+        <div class="stars">★★★★☆</div>
+        <div class="score-feedback">
+          Great job staying upright for most of your session! A few slouching moments — keep improving!
+        </div>
+      </div>
+
+      <div class="session-details-card">
+        <div class="details-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Session Details
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Total Duration
+          </span>
+          <span class="detail-val">{{ stats.total_time if stats else '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            Posture Alerts
+          </span>
+          <span class="detail-val">{{ stats.alerts | length if stats and stats.alerts else 0 }} alerts</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">
+            <span>🔥</span>
+            Best Streak
+          </span>
+          <span class="detail-val">24 min</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Breakdown + Stretches -->
+    <div class="right-col">
+
+      <div class="breakdown-card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+          </svg>
+          Posture Breakdown
+        </div>
+
+        <div class="breakdown-grid">
+          <div class="bd-item good">
+            <div class="bd-header good">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Good Posture
+            </div>
+            <div class="bd-time" style="color:#16a34a;">{{ stats.good_time if stats else '—' }}</div>
+            <div class="bd-bar-wrap good">
+              <div class="bd-bar" style="width:{{ stats.good_pct if stats else 0 }}%;background:#16a34a;"></div>
+            </div>
+            <div class="bd-pct">{{ stats.good_pct if stats else 0 }}%</div>
+          </div>
+          <div class="bd-item lean">
+            <div class="bd-header lean">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Leaning
+            </div>
+            <div class="bd-time" style="color:#d97706;">{{ stats.leaning_time if stats else '—' }}</div>
+            <div class="bd-bar-wrap lean">
+              <div class="bd-bar" style="width:{{ stats.leaning_pct if stats else 0 }}%;background:#d97706;"></div>
+            </div>
+            <div class="bd-pct">{{ stats.leaning_pct if stats else 0 }}%</div>
+          </div>
+          <div class="bd-item sev">
+            <div class="bd-header sev">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Severe Slouch
+            </div>
+            <div class="bd-time" style="color:#dc2626;">{{ stats.severe_time if stats else '—' }}</div>
+            <div class="bd-bar-wrap sev">
+              <div class="bd-bar" style="width:{{ stats.severe_pct if stats else 0 }}%;background:#dc2626;"></div>
+            </div>
+            <div class="bd-pct">{{ stats.severe_pct if stats else 0 }}%</div>
+          </div>
+        </div>
+
+        <div class="dist-section">
+          <div class="dist-header">
+            <span>Posture Distribution</span>
+            <span>{{ stats.total_time if stats else '—' }} total</span>
+          </div>
+          <div class="dist-bar">
+            <div style="width:{{ stats.good_pct if stats else 0 }}%;background:#22c55e;"></div>
+            <div style="width:{{ stats.leaning_pct if stats else 0 }}%;background:#f59e0b;margin-left:2px;"></div>
+            <div style="width:{{ stats.severe_pct if stats else 0 }}%;background:#ef4444;margin-left:2px;"></div>
+          </div>
+          <div class="dist-legend">
+            <div class="dist-leg">
+              <div class="dist-leg-dot" style="background:#22c55e;"></div>Good ({{ stats.good_pct if stats else 0 }}%)
+            </div>
+            <div class="dist-leg">
+              <div class="dist-leg-dot" style="background:#f59e0b;"></div>Leaning ({{ stats.leaning_pct if stats else 0 }}%)
+            </div>
+            <div class="dist-leg">
+              <div class="dist-leg-dot" style="background:#ef4444;"></div>Severe ({{ stats.severe_pct if stats else 0 }}%)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stretches-card">
+        <div class="stretches-header">
+          <div class="card-title" style="margin-bottom:0;">
+            🧘 Recommended Stretches
+          </div>
+          <span class="ex-count">4 exercises</span>
+        </div>
+        <div class="stretches-grid">
+          <div class="stretch-item">
+            <span class="stretch-emoji">🧘</span>
+            <div class="stretch-body">
+              <div class="stretch-name-row">
+                <span class="stretch-name blue">Neck Stretch</span>
+                <span class="stretch-reps">30 sec each side</span>
+              </div>
+              <div class="stretch-desc">Tilt your head slowly side to side, ear towards shoulder.</div>
+            </div>
+          </div>
+          <div class="stretch-item">
+            <span class="stretch-emoji">🔄</span>
+            <div class="stretch-body">
+              <div class="stretch-name-row">
+                <span class="stretch-name green">Shoulder Rolls</span>
+                <span class="stretch-reps">10 reps</span>
+              </div>
+              <div class="stretch-desc">Roll shoulders backwards in large circles to release tension.</div>
+            </div>
+          </div>
+          <div class="stretch-item">
+            <span class="stretch-emoji">🤸</span>
+            <div class="stretch-body">
+              <div class="stretch-name-row">
+                <span class="stretch-name orange">Back Extension</span>
+                <span class="stretch-reps">3 × 10 sec</span>
+              </div>
+              <div class="stretch-desc">Hands on lower back, gently arch backwards to open the chest.</div>
+            </div>
+          </div>
+          <div class="stretch-item">
+            <span class="stretch-emoji">🙏</span>
+            <div class="stretch-body">
+              <div class="stretch-name-row">
+                <span class="stretch-name purple">Wrist Stretch</span>
+                <span class="stretch-reps">20 sec each</span>
+              </div>
+              <div class="stretch-desc">Extend arm, pull fingers back gently with opposite hand.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="actions">
+    <a href="/work-session" class="btn-start">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+        <path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38"/>
+      </svg>
+      Start New Session
+    </a>
+    <a href="/dashboard" class="btn-view">
+      View Dashboard
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </a>
+  </div>
+
+</main>
+</body>
+</html>

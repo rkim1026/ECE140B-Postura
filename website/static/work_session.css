@@ -1,0 +1,390 @@
+/* ============================================================
+   Postura – Work Session page styles
+   (sidebar/base from profile.css)
+   ============================================================ */
+
+.page-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   CALIBRATE BANNER
+   ============================================================ */
+
+.calibrate-banner {
+  background: linear-gradient(135deg, #4f6ef7 0%, #3b4fd8 60%, #3730c4 100%);
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.calibrate-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.calibrate-icon-wrap {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.calibrate-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.calibrate-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.55;
+}
+
+/* Posture States Guide */
+.posture-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.guide-card {
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 10px;
+  padding: 12px 14px;
+  backdrop-filter: blur(4px);
+}
+
+.guide-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+
+.guide-card-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.guide-card-title.good     { color: #4ade80; }
+.guide-card-title.leaning  { color: #fcd34d; }
+.guide-card-title.slouching{ color: #fb923c; }
+
+.guide-card-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.70);
+  line-height: 1.4;
+}
+
+/* Calibrate button */
+.calibrate-btn {
+  width: 100%;
+  background: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.calibrate-btn:hover  { background: #f0f5ff; }
+.calibrate-btn:active { transform: scale(0.99); }
+
+/* ============================================================
+   BOTTOM GRID
+   ============================================================ */
+
+.ws-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+  align-items: start;
+}
+
+.ws-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================
+   TIMER CARD
+   ============================================================ */
+
+.timer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 48px 32px 36px;
+}
+
+.timer-circle {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 2px solid #e0e7ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.timer-clock-icon {
+  margin-bottom: 4px;
+}
+
+.timer-value {
+  font-size: 38px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+
+.timer-label {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.start-btn {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #4f6ef7 0%, #3730c4 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 4px 14px rgba(59, 80, 224, 0.4);
+}
+
+.start-btn:hover  { opacity: 0.92; }
+.start-btn:active { transform: scale(0.99); }
+
+/* ============================================================
+   SESSION DURATION CARD
+   ============================================================ */
+
+.duration-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dur-btn {
+  padding: 11px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.dur-btn:hover {
+  background: #f3f4f6;
+}
+
+.dur-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  font-weight: 700;
+}
+
+.custom-row {
+  padding-top: 4px;
+}
+
+.custom-label {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* ============================================================
+   SESSION SETTINGS CARD
+   ============================================================ */
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid #f3f4f6;
+}
+
+.setting-item:first-of-type {
+  border-top: none;
+}
+
+.setting-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setting-icon-wrap {
+  width: 36px;
+  height: 36px;
+  background: #eff6ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.setting-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.setting-desc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Toggle switch */
+.toggle {
+  width: 46px;
+  height: 26px;
+  border-radius: 99px;
+  background: #e5e7eb;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: left 0.2s;
+}
+
+.toggle.on {
+  background: #2563eb;
+}
+
+.toggle.on::after {
+  left: calc(100% - 23px);
+}
+
+/* ============================================================
+   POSTURE TIPS CARD
+   ============================================================ */
+
+.tips-card {
+  background: linear-gradient(135deg, #4f6ef7 0%, #3730c4 100%);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+
+.tips-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tips-bulb {
+  font-size: 18px;
+}
+
+.tips-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tips-list li {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.88);
+  padding-left: 14px;
+  position: relative;
+  line-height: 1.45;
+}
+
+.tips-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Sensor connection states (used by dashboard.js WebSocket) */
+.sensor-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.sensor-dot.connecting {
+  background: #eab308;
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+}
+
+.sensor-status.offline { color: #ef4444; }
+.sensor-status.connecting { color: #eab308; }
