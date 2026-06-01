@@ -1,4 +1,4 @@
-// Posture Monitor — VL53L5CX 8x8 ToF
+// Posture Monitor — VL53L5CX 8x8 ToF with Dual Haptic Feedback
 // 4 classifications: GOOD, MILD_SLOUCH, SEVERE_SLOUCH, LEANING_BACK
 // Forward posture via gradient delta. Lean-back via meanDev / tooClose.
 
@@ -21,6 +21,11 @@ bool wpaWifi = true;
 #define SCL_PIN      4
 #define QWIIC_POWER  7
 
+// --- VIBRATION MOTOR CONTROL PINS ---
+// Both connected to their own 2N2222 Transistor Base via 1K/330R resistors
+#define MOTOR1_PIN   5 
+#define MOTOR2_PIN   9 
+
 SparkFun_VL53L5CX    sensor;
 VL53L5CX_ResultsData results;
 
@@ -30,12 +35,11 @@ VL53L5CX_ResultsData results;
 #define CAL_DURATION 5000
 
 // Forward slouch thresholds — delta from calibrated natural gradient
-#define VERT_MILD   12
+#define VERT_MILD   18
 #define VERT_SEVERE 36 
 
 // Lean-back: triggered when back is physically ~30mm from sensor floor,
 // or when more than 8 valid zones read below MIN_VALID_MM (too close).
-// leanBackMeanThresh = -(cal_mean_dist - MIN_VALID_MM - 30)
 #define LEANBACK_HEADROOM 30
 #define LEANBACK_TOOCLOSE  8
 
@@ -70,8 +74,6 @@ void onMqttMessage(char* topic, uint8_t* payload, unsigned int length) {
 }
 
 // ── Gradient computation ───────────────────────────────────
-// Weighted by zone reliability (lower stddev = higher weight).
-// Only uses zones marked valid during calibration.
 void computeVertGradient(int32_t* out_vert) {
     int32_t topWS = 0, botWS = 0;
     int32_t topW  = 0, botW  = 0;
@@ -93,6 +95,11 @@ void computeVertGradient(int32_t* out_vert) {
 // ── Calibration ────────────────────────────────────────────
 void runCalibration() {
     calibrated = false;
+    
+    // Ensure BOTH motors are OFF during calibration 
+    digitalWrite(MOTOR1_PIN, LOW); 
+    digitalWrite(MOTOR2_PIN, LOW); 
+
     mqtt.publishMessage("status", "calibrating");
     Serial.println("[Posture] Calibration started (5s) — sit straight");
 
@@ -200,17 +207,13 @@ void assessAndPublish() {
         if (!zoneValid[i]) { deviation[i] = 0; continue; }
 
         if (v == 0 || v > MAX_VALID_MM) {
-            // No return or out of range — ignore
             deviation[i] = 0;
         } else if (v < MIN_VALID_MM) {
-            // Back pressed physically close to sensor — lean-back indicator
-            // Count it AND include its (very negative) deviation in meanDev
             deviation[i] = (int32_t)v - baseline[i];
             tooCloseCount++;
             meanDevSum += deviation[i];
             meanDevCnt++;
         } else {
-            // Normal valid reading
             deviation[i] = (int32_t)v - baseline[i];
             meanDevSum  += deviation[i];
             meanDevCnt++;
@@ -223,28 +226,40 @@ void assessAndPublish() {
     computeVertGradient(&live_vert);
     int32_t dVert = abs((int32_t)(live_vert - cal_vert_grad));
 
-    // Lean-back trigger A: back physically touching sensor floor
-    // (>8 valid calibration zones now reading below MIN_VALID_MM)
-    bool tooCloseTrigger = (tooCloseCount > LEANBACK_TOOCLOSE);
-
-    // Lean-back trigger B: mean deviation has dropped to within
-    // LEANBACK_HEADROOM mm of the sensor floor
-    // At cal_mean_dist=130: thresh = -(130 - 20 - 30) = -80 mm
     int32_t leanBackMeanThresh = -(cal_mean_dist - MIN_VALID_MM - LEANBACK_HEADROOM);
+    bool tooCloseTrigger = (tooCloseCount > LEANBACK_TOOCLOSE);
     bool meanDevTrigger = (meanDev <= leanBackMeanThresh);
 
-    // Classification:
-    // Forward slouch via dVert runs first and takes priority.
-    // tooCloseTrigger fires before everything — if zones are physically
-    // at the sensor the gradient is meaningless.
-    // meanDevTrigger fires last, after confirming dVert is not positive.
     const char* posture;
 
+    // --- POSTURE CLASSIFICATION ---
     if      (tooCloseTrigger)     posture = "LEANING_BACK";
     else if (dVert > VERT_SEVERE) posture = "SEVERE_SLOUCH";
     else if (dVert > VERT_MILD)   posture = "MILD_SLOUCH";
     else if (meanDevTrigger)      posture = "LEANING_BACK";
     else                          posture = "GOOD";
+
+    // --- DUAL MOTOR HAPTIC FEEDBACK LOGIC ---
+    static bool pulseState = false; // Keeps track of the pulse toggle between loops
+
+    if (strcmp(posture, "SEVERE_SLOUCH") == 0) {
+        // Continuous vibration
+        digitalWrite(MOTOR1_PIN, HIGH); 
+        digitalWrite(MOTOR2_PIN, HIGH);
+        pulseState = false; // Reset pulse state so mild slouch always starts with an ON pulse
+    } 
+    else if (strcmp(posture, "MILD_SLOUCH") == 0) {
+        // Pulse vibration: Flips state every 1 second (due to the delay in loop)
+        pulseState = !pulseState;
+        digitalWrite(MOTOR1_PIN, pulseState ? HIGH : LOW);
+        digitalWrite(MOTOR2_PIN, pulseState ? HIGH : LOW);
+    } 
+    else {
+        // Turn off motors for GOOD or LEANING_BACK
+        digitalWrite(MOTOR1_PIN, LOW);  
+        digitalWrite(MOTOR2_PIN, LOW);
+        pulseState = false;
+    }
 
     Serial.printf("[Posture] %s | dVert:%+d meanDev:%+d lbThresh:%+d tooClose:%d\n",
         posture, (int)dVert, (int)meanDev, (int)leanBackMeanThresh, tooCloseCount);
@@ -278,6 +293,12 @@ void setup() {
     Serial.begin(115200);
     delay(2000);
 
+    // --- INITIALIZE MOTOR PINS ---
+    pinMode(MOTOR1_PIN, OUTPUT);
+    pinMode(MOTOR2_PIN, OUTPUT);
+    digitalWrite(MOTOR1_PIN, LOW); // Default to off
+    digitalWrite(MOTOR2_PIN, LOW);
+
     if (wpaWifi == true) {
         wifi.connectToWPAEnterprise(WIFI_SSID, UCSD_USERNAME, UCSD_PASSWORD);
     } else {
@@ -310,5 +331,11 @@ void setup() {
 void loop() {
     mqtt.loop();
     if (doCalibrate) { doCalibrate = false; runCalibration(); }
-    if (calibrated)  { assessAndPublish(); delay(1000); }
+    
+    // Evaluate posture. 
+    // The 1000ms delay perfectly drives our 1-second pulsing logic for mild slouch.
+    if (calibrated)  { 
+        assessAndPublish(); 
+        delay(1000); 
+    }
 }
