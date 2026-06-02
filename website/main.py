@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import uuid
+import random
 import bcrypt
 import mysql.connector
 import paho.mqtt.client as mqtt
@@ -19,8 +20,11 @@ from datetime import datetime
 load_dotenv()
 
 # --- Config ---
-MQTT_BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
-MQTT_TOPIC  = os.getenv("MQTT_TOPIC", "postura")
+# MAKE SURE your .env file or these fallbacks match your C++ code!
+MQTT_BROKER = os.getenv("MQTT_BROKER", "test.mosquitto.org") 
+MQTT_TOPIC  = os.getenv("MQTT_TOPIC", "chuach1234")
+CMD_TOPIC   = f"{MQTT_TOPIC}/cmd"
+
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "127.0.0.1"),
     "user": os.getenv("DB_USER", "root"),
@@ -28,15 +32,47 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME", "postura_db")
 }
 
+# --- Break Tips ---
+BREAK_HEALTH_TIPS = [
+    {
+        "source": "Columbia University Irving Medical Center",
+        "url": "https://www.cuimc.columbia.edu/news/rx-prolonged-sitting-five-minute-stroll-every-half-hour",
+        "summary": "Columbia University researchers tested five different walking schedules on office workers who sat for eight straight hours. Their key finding: just five minutes of light walking every 30 minutes was the only routine that significantly lowered both blood sugar and blood pressure."
+    },
+    {
+        "source": "Harvard Health Publishing",
+        "url": "https://www.health.harvard.edu/healthy-aging-and-longevity/walking-breaks-counter-the-effects-of-sitting",
+        "summary": "Harvard Health reviewed a controlled study where adults aged 40–70 sat for eight hours while researchers tracked blood sugar and blood pressure every 15–60 minutes. The verdict: five minutes of walking after every 30 minutes of sitting was the only pattern that meaningfully lowered both metrics."
+    },
+    {
+        "source": "National Institutes of Health",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8628304/",
+        "summary": "A peer-reviewed NIH study from the University of Illinois at Chicago examined the full-body physiological cost of prolonged sitting. Every extra hour of daily sedentary time reduced cardiorespiratory fitness by up to 0.24 METs."
+    },
+]
+
+# --- State ---
+latest_frame = None
+last_good_frame = None
+calibration = None
+system_status = "waiting"
+break_active = False
+break_demo_mode = False
+break_compliance_log = []
+clients: list[WebSocket] = []
+
 # --- Pydantic Models ---
 class UserLogin(BaseModel):
-    username: str # This is the Email
+    username: str
     password: str
 
 class UserRegister(BaseModel):
     full_name: str
-    username: str # This is the Email
+    username: str
     password: str
+
+class CommandPayload(BaseModel):
+    cmd: str
 
 # --- Database Dependency ---
 def get_db():
@@ -46,11 +82,9 @@ def get_db():
     finally:
         conn.close()
 
-# --- Auth Helper  ---
 def get_current_user(session_token: str | None = Cookie(None), conn=Depends(get_db)):
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute("SELECT user_id FROM sessions WHERE session_token = %s", (session_token,))
@@ -61,6 +95,13 @@ def get_current_user(session_token: str | None = Cookie(None), conn=Depends(get_
     finally:
         cursor.close()
 
+def get_user_data(user_id: int, conn):
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT full_name, username FROM users WHERE id = %s", (user_id,))
+    user_data = cursor.fetchone()
+    cursor.close()
+    return user_data
+
 # --- CSV Reader Helper ---
 def get_csv_stats():
     csv_path = "posture_data.csv"
@@ -69,43 +110,29 @@ def get_csv_stats():
 
     try:
         df = pd.read_csv(csv_path)
-        if df.empty:
-            return None
+        if df.empty: return None
 
-        # 1. Convert timestamp column and categorize
         df['timestamp'] = pd.to_datetime(df['timestamp'])
-        
         total_rows = len(df)
         good_df = df[df['label'] == 'GOOD']
         severe_df = df[df['label'] == 'SEVERE_SLOUCH']
-        # Everything else is "leaning"
         leaning_df = df[~df['label'].isin(['GOOD', 'SEVERE_SLOUCH'])]
 
-        # 2. Calculate Percentages for cards
         good_pct = round((len(good_df) / total_rows) * 100) if total_rows > 0 else 0
         leaning_pct = round((len(leaning_df) / total_rows) * 100) if total_rows > 0 else 0
         severe_pct = round((len(severe_df) / total_rows) * 100) if total_rows > 0 else 0
 
-        # 3. Calculate Durations (approx 5s per row)
         def format_time(seconds):
             h, m = divmod(seconds // 60, 60)
             return f"{h}h {m}m" if h > 0 else f"{m}m"
 
-        # 4. Correct Resampling Logic for Line Chart
-        # We create a temporary numeric column where GOOD = 100, others = 0
         df['quality_score'] = df['label'].apply(lambda x: 100 if x == 'GOOD' else 0)
-        
-        # Set index to timestamp to allow resampling the DataFrame
         df_resample = df.set_index('timestamp')
-        
-        # Resample the 'quality_score' column into 15-minute averages
         resampled = df_resample['quality_score'].resample('15min').mean().fillna(0)
         
         timeline = resampled.round().tolist()
-        # Format the index timestamps directly into strings
         chart_labels = resampled.index.strftime('%H:%M').tolist()
 
-        # 5. Extract Last 5 Alerts (Newest First)
         alerts = df[df['label'] != 'GOOD'].tail(5).copy()
         alerts_list = []
         for _, row in alerts.iloc[::-1].iterrows():
@@ -116,50 +143,55 @@ def get_csv_stats():
             })
 
         return {
-            "good_pct": good_pct,
-            "leaning_pct": leaning_pct,
-            "severe_pct": severe_pct,
+            "good_pct": good_pct, "leaning_pct": leaning_pct, "severe_pct": severe_pct,
             "good_time": format_time(len(good_df) * 5),
             "leaning_time": format_time(len(leaning_df) * 5),
             "severe_time": format_time(len(severe_df) * 5),
             "total_time": format_time(total_rows * 5),
-            "chart_data": timeline[-12:],   # Last 3 hours of data
-            "chart_labels": chart_labels[-12:],
+            "chart_data": timeline[-12:], "chart_labels": chart_labels[-12:],
             "alerts": alerts_list
         }
     except Exception as e:
         print(f"Error processing CSV: {e}")
         return None
 
-# --- MQTT & Live Feed ---
-clients: list[WebSocket] = []
-current_frame = None
-
+# --- MQTT Handlers ---
 def on_message(client, userdata, msg):
-    global current_frame
+    global latest_frame, last_good_frame, calibration, system_status
     try:
-        data = json.loads(msg.payload.decode())
-        current_frame = data
-    except: pass
+        topic = msg.topic
+        if topic == f"{MQTT_TOPIC}/data":
+            parsed = json.loads(msg.payload.decode())
+            latest_frame = parsed
+            last_good_frame = parsed
+        elif topic == f"{MQTT_TOPIC}/calibration":
+            calibration = json.loads(msg.payload.decode())
+        elif topic == f"{MQTT_TOPIC}/status":
+            system_status = msg.payload.decode()
+    except Exception:
+        pass
 
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_message = on_message
 
 async def broadcast_loop():
-    global current_frame
+    global latest_frame, system_status, calibration
     while True:
-        if current_frame and clients:
-            payload = json.dumps({"type": "frame", **current_frame})
+        if latest_frame and clients:
+            payload = json.dumps({
+                "type": "frame", "status": system_status,
+                "frame": latest_frame, "calibration": calibration
+            })
             for ws in clients[:]:
                 try: await ws.send_text(payload)
                 except: clients.remove(ws)
-            current_frame = None
+            latest_frame = None
         await asyncio.sleep(0.1)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mqtt_client.connect(MQTT_BROKER, 1883, 60)
-    mqtt_client.subscribe(f"{MQTT_TOPIC}/thermal")
+    mqtt_client.subscribe(f"{MQTT_TOPIC}/#")
     mqtt_client.loop_start()
     asyncio.create_task(broadcast_loop())
     yield
@@ -167,10 +199,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/images", StaticFiles(directory="images"), name="images")
 templates = Jinja2Templates(directory="templates")
 
-# --- Page Routes ---
-
+# --- Routes ---
 @app.get("/")
 async def root(session_token: str = Cookie(None), conn=Depends(get_db)):
     if not session_token: return RedirectResponse("/login")
@@ -186,55 +218,36 @@ async def root(session_token: str = Cookie(None), conn=Depends(get_db)):
 async def login_page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-def get_user_data(user_id: int, conn):
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT full_name, username FROM users WHERE id = %s", (user_id,))
-    user_data = cursor.fetchone()
-    cursor.close()
-    return user_data
-
-
 @app.get("/dashboard")
 async def dashboard_page(request: Request, user_id=Depends(get_current_user), conn=Depends(get_db)):
     return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "user": get_user_data(user_id, conn),
-        "stats": get_csv_stats(),
-        "active_page": "dashboard",
+        "request": request, "user": get_user_data(user_id, conn),
+        "stats": get_csv_stats(), "active_page": "dashboard",
     })
-
 
 @app.get("/work-session")
 async def work_session_page(request: Request, user_id=Depends(get_current_user), conn=Depends(get_db)):
     return templates.TemplateResponse("work_session.html", {
-        "request": request,
-        "user": get_user_data(user_id, conn),
+        "request": request, "user": get_user_data(user_id, conn),
         "active_page": "work_session",
     })
-
 
 @app.get("/profile")
 async def profile_page(request: Request, user_id=Depends(get_current_user), conn=Depends(get_db)):
     return templates.TemplateResponse("profile.html", {
-        "request": request,
-        "user": get_user_data(user_id, conn),
-        "stats": get_csv_stats(),
-        "active_page": "profile",
+        "request": request, "user": get_user_data(user_id, conn),
+        "stats": get_csv_stats(), "active_page": "profile",
     })
-
 
 @app.get("/summary")
 async def summary_page(request: Request, user_id=Depends(get_current_user), conn=Depends(get_db)):
-    stats = get_csv_stats()
     return templates.TemplateResponse("postura-summary.html", {
-        "request": request,
-        "user": get_user_data(user_id, conn),
-        "stats": stats,
-        "active_page": "summary",
+        "request": request, "user": get_user_data(user_id, conn),
+        "stats": get_csv_stats(), "active_page": "summary",
         "today": datetime.now().strftime("%A, %B %-d"),
     })
-# --- Auth API ---
 
+# --- Auth API ---
 @app.post("/api/register")
 async def register(creds: UserRegister, conn=Depends(get_db)):
     cursor = conn.cursor()
@@ -244,10 +257,8 @@ async def register(creds: UserRegister, conn=Depends(get_db)):
         raise HTTPException(status_code=400, detail="Account already exists.")
 
     hashed = bcrypt.hashpw(creds.password.encode(), bcrypt.gensalt()).decode()
-    cursor.execute(
-        "INSERT INTO users (username, full_name, password_hash) VALUES (%s, %s, %s)", 
-        (creds.username, creds.full_name, hashed)
-    )
+    cursor.execute("INSERT INTO users (username, full_name, password_hash) VALUES (%s, %s, %s)", 
+                   (creds.username, creds.full_name, hashed))
     conn.commit()
     cursor.close()
     return {"success": True}
@@ -279,6 +290,45 @@ async def logout(response: Response, session_token: str = Cookie(None), conn=Dep
         cursor.close()
     response.delete_cookie("session_token")
     return {"success": True}
+
+# --- Hardware / Break API ---
+@app.post("/api/command")
+async def send_command(payload: CommandPayload):
+    """Takes the fetch() from the JS and pushes it out to the ESP32"""
+    try:
+        # Use the existing background MQTT client to publish
+        mqtt_client.publish(CMD_TOPIC, payload.cmd)
+        return {"status": "success", "message": f"Sent {payload.cmd} to hardware."}
+    except Exception as e:
+        print(f"MQTT Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send command to hardware")
+
+# Kept this just in case you had old UI buttons relying on it
+@app.post("/api/calibrate") 
+async def trigger_calibrate():
+    mqtt_client.publish(CMD_TOPIC, "CALIBRATE")
+    return {"success": True}
+
+@app.post("/api/break/start")
+async def break_start(demo: bool = False):
+    global break_active, break_demo_mode
+    break_active = True
+    break_demo_mode = demo
+    return {"success": True, "break_active": True}
+
+@app.post("/api/break/end")
+async def break_end():
+    global break_active
+    break_active = False
+    break_compliance_log.append({"timestamp": datetime.now().isoformat(), "complied": True})
+    return {"success": True}
+
+@app.post("/api/break/skip")
+async def break_skip():
+    global break_active
+    break_active = False
+    break_compliance_log.append({"timestamp": datetime.now().isoformat(), "complied": False})
+    return {"success": True, "tip": random.choice(BREAK_HEALTH_TIPS)}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

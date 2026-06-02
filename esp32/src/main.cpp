@@ -40,7 +40,7 @@ VL53L5CX_ResultsData results;
 
 // Lean-back: triggered when back is physically ~30mm from sensor floor,
 // or when more than 8 valid zones read below MIN_VALID_MM (too close).
-#define LEANBACK_HEADROOM 30
+#define LEANBACK_HEADROOM 20
 #define LEANBACK_TOOCLOSE  8
 
 // ── Calibration state ──────────────────────────────────────
@@ -224,11 +224,12 @@ void assessAndPublish() {
 
     int32_t live_vert = 0;
     computeVertGradient(&live_vert);
-    int32_t dVert = abs((int32_t)(live_vert - cal_vert_grad));
+    int32_t dVertRaw = ((int32_t)(live_vert - cal_vert_grad));
+    int32_t dVert = abs(dVertRaw);
 
-    int32_t leanBackMeanThresh = -(cal_mean_dist - MIN_VALID_MM - LEANBACK_HEADROOM);
+    int32_t leanBackMeanThresh = -(cal_mean_dist - MIN_VALID_MM - LEANBACK_HEADROOM); 
     bool tooCloseTrigger = (tooCloseCount > LEANBACK_TOOCLOSE);
-    bool meanDevTrigger = (meanDev <= leanBackMeanThresh);
+    bool meanDevTrigger = (meanDev <= leanBackMeanThresh) && (dVertRaw <= VERT_MILD);
 
     const char* posture;
 
