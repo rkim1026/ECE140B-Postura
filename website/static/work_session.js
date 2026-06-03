@@ -630,7 +630,7 @@ function closeTip() {
 
 // ── Session Timer Logic ───────────────────────────────────
 let sessionTimerInterval = null;
-let sessionSecondsLeft = 30 * 60;
+let sessionSecondsLeft = 5;
 let isSessionActive = false;
 
 function updateTimerDisplay() {
@@ -671,7 +671,7 @@ function startSession() {
     isSessionActive = false;
     btnText.textContent = "Start Session";
     btn.style.background = "linear-gradient(135deg, #4f6ef7 0%, #3730c4 100%)";
-    sessionSecondsLeft = 30 * 60;
+    sessionSecondsLeft = 5;
     updateTimerDisplay();
     startBreak();
   }, 1000);

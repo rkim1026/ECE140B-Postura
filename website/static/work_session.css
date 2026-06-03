@@ -145,7 +145,6 @@ button {
 /* --- Live posture card --- */
 .posture-status-card {
   padding: 22px 24px;
-  margin-bottom: 24px;
 }
 
 .posture-status-head {
@@ -216,9 +215,9 @@ button {
 /* --- Dynamic posture banner --- */
 .posture-banner {
   display: flex;
-  align-items: stretch;
-  gap: 18px;
-  padding: 18px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
   border-radius: 16px;
   background: #fff;
   border: 1px solid var(--border);
@@ -226,8 +225,8 @@ button {
 }
 
 .posture-banner-visual {
-  width: 260px;
-  min-height: 220px;
+  width: 100%;
+  min-height: 180px;
   border-radius: 14px;
   border: 1px solid #dbe3f0;
   background:
@@ -473,7 +472,7 @@ button {
 /* --- Bottom grid --- */
 .ws-grid {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 300px 1fr 360px;
   gap: 20px;
   align-items: start;
 }
@@ -1212,13 +1211,27 @@ button {
 }
 
 /* --- Responsive --- */
-@media (max-width: 1180px) {
+@media (max-width: 1260px) {
+  .ws-grid {
+    grid-template-columns: 280px 1fr;
+  }
+
+  .ws-right-col {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
   .ws-grid {
     grid-template-columns: 1fr;
   }
 
   .ws-right-col {
-    order: 2;
+    grid-column: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .timer-card {
@@ -1233,14 +1246,6 @@ button {
 
   .analytics-split {
     grid-template-columns: 1fr;
-  }
-
-  .posture-banner {
-    flex-direction: column;
-  }
-
-  .posture-banner-visual {
-    width: 100%;
   }
 }
 

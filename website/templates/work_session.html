@@ -109,69 +109,6 @@
       <p class="page-subtitle">Set your session duration and start tracking.</p>
     </div>
 
-    <!-- Always-visible live posture section -->
-    <section class="card posture-status-card">
-      <div class="posture-status-head">
-        <div>
-          <p class="posture-status-kicker">Live posture feedback</p>
-          <h2 class="analytics-title" style="margin-bottom: 6px;">Current Posture</h2>
-          <p class="cal-hint" style="margin: 0;">
-            This panel updates when MQTT posture data arrives from the ESP32.
-          </p>
-        </div>
-        <div class="badge neutral" id="posture-badge-top">WAITING</div>
-      </div>
-
-      <div class="posture-status-body">
-        <!-- Waiting / empty state -->
-        <div class="posture-waiting-state" id="posture-waiting-state">
-          <div class="posture-waiting-icon">📡</div>
-          <div class="posture-waiting-copy">
-            <div class="posture-waiting-title">No live posture data yet</div>
-            <div class="posture-waiting-desc">
-              Connect the ESP32 and start publishing frames to see your live posture and image.
-            </div>
-          </div>
-        </div>
-
-        <!-- Dynamic posture banner used by JS -->
-        <div class="posture-banner" id="posture-banner" style="display:none" aria-live="polite">
-          <div class="posture-banner-visual">
-            <div class="posture-banner-empty" id="posture-banner-empty" style="display:none">
-              No posture image available
-            </div>
-            <img id="posture-banner-img"
-                 src=""
-                 alt="Current posture illustration"
-                 class="posture-banner-img"
-                 style="display:none">
-          </div>
-
-          <div class="posture-banner-copy">
-            <div class="posture-banner-label-wrap">
-              <span class="posture-banner-label-title">Detected posture</span>
-              <div id="posture-banner-label" class="posture-banner-label">—</div>
-            </div>
-
-            <div class="posture-banner-meta">
-              <div class="posture-meta-chip">
-                <span class="pm-label">Sensor</span>
-                <span class="pm-value" id="posture-source-state">Waiting for MQTT</span>
-              </div>
-              <div class="posture-meta-chip">
-                <span class="pm-label">Stream</span>
-                <span class="pm-value" id="posture-stream-state">No frames yet</span>
-              </div>
-            </div>
-
-            <p class="posture-banner-note" id="posture-banner-note">
-              When the ESP32 sends GOOD, MILD_SLOUCH, SEVERE_SLOUCH, or LEANING_BACK, this area should show the matching label and image.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Calibrate Banner -->
     <div class="calibrate-banner">
       <div class="calibrate-top">
@@ -265,6 +202,67 @@
           Take a Break Now
         </button>
       </div>
+
+      <!-- Middle: Live Posture Card -->
+      <section class="card posture-status-card">
+        <div class="posture-status-head">
+          <div>
+            <p class="posture-status-kicker">Live posture feedback</p>
+            <h2 class="analytics-title" style="margin-bottom: 6px;">Current Posture</h2>
+            <p class="cal-hint" style="margin: 0;">
+              Updates when MQTT data arrives from the ESP32.
+            </p>
+          </div>
+          <div class="badge neutral" id="posture-badge-top">WAITING</div>
+        </div>
+
+        <div class="posture-status-body">
+          <div class="posture-waiting-state" id="posture-waiting-state">
+            <div class="posture-waiting-icon">📡</div>
+            <div class="posture-waiting-copy">
+              <div class="posture-waiting-title">No live posture data yet</div>
+              <div class="posture-waiting-desc">
+                Connect the ESP32 and start publishing frames to see your live posture and image.
+              </div>
+            </div>
+          </div>
+
+          <div class="posture-banner" id="posture-banner" style="display:none" aria-live="polite">
+            <div class="posture-banner-visual">
+              <div class="posture-banner-empty" id="posture-banner-empty" style="display:none">
+                No posture image available
+              </div>
+              <img id="posture-banner-img"
+                   src=""
+                   alt="Current posture illustration"
+                   class="posture-banner-img"
+                   style="display:none">
+            </div>
+
+            <div class="posture-banner-copy">
+              <div class="posture-banner-label-wrap">
+                <span class="posture-banner-label-title">Detected posture</span>
+                <div id="posture-banner-label" class="posture-banner-label">—</div>
+              </div>
+
+              <div class="posture-banner-meta">
+                <div class="posture-meta-chip">
+                  <span class="pm-label">Sensor</span>
+                  <span class="pm-value" id="posture-source-state">Waiting for MQTT</span>
+                </div>
+                <div class="posture-meta-chip">
+                  <span class="pm-label">Stream</span>
+                  <span class="pm-value" id="posture-stream-state">No frames yet</span>
+                </div>
+              </div>
+
+              <p class="posture-banner-note" id="posture-banner-note">
+                When the ESP32 sends GOOD, MILD_SLOUCH, SEVERE_SLOUCH, or LEANING_BACK, this area shows the matching label and image.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- Right Column -->
       <div class="ws-right-col">
