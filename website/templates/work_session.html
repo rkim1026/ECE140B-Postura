@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Postura – Work Session</title>
+
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/logo.css" />
   <link rel="stylesheet" href="/static/profile.css" />
   <link rel="stylesheet" href="/static/work_session.css" />
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
@@ -21,7 +23,7 @@
         <p class="break-confirm-question">Have you walked for 3–5 minutes?</p>
         <div class="break-confirm-btns">
           <button class="btn-good-confirm" onclick="endBreak()">✓ Yes, done!</button>
-          <button class="btn-no-confirm"   onclick="skipBreak()">✗ Not yet</button>
+          <button class="btn-no-confirm" onclick="skipBreak()">✗ Not yet</button>
         </div>
       </div>
     </div>
@@ -57,24 +59,32 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
           <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-        </svg> Dashboard
+        </svg>
+        Dashboard
       </a>
+
       <a href="/work-session" class="nav-item active">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="5 3 19 12 5 21 5 3"/>
-        </svg> Work Session
+        </svg>
+        Work Session
       </a>
+
       <a href="/summary" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
           <line x1="6" y1="20" x2="6" y2="14"/>
-        </svg> Summary
+        </svg>
+        Summary
       </a>
+
       <a href="/profile" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
-        </svg> Profile
+        </svg>
+        Profile
       </a>
     </nav>
 
@@ -99,32 +109,103 @@
       <p class="page-subtitle">Set your session duration and start tracking.</p>
     </div>
 
+    <!-- Always-visible live posture section -->
+    <section class="card posture-status-card">
+      <div class="posture-status-head">
+        <div>
+          <p class="posture-status-kicker">Live posture feedback</p>
+          <h2 class="analytics-title" style="margin-bottom: 6px;">Current Posture</h2>
+          <p class="cal-hint" style="margin: 0;">
+            This panel updates when MQTT posture data arrives from the ESP32.
+          </p>
+        </div>
+        <div class="badge neutral" id="posture-badge-top">WAITING</div>
+      </div>
+
+      <div class="posture-status-body">
+        <!-- Waiting / empty state -->
+        <div class="posture-waiting-state" id="posture-waiting-state">
+          <div class="posture-waiting-icon">📡</div>
+          <div class="posture-waiting-copy">
+            <div class="posture-waiting-title">No live posture data yet</div>
+            <div class="posture-waiting-desc">
+              Connect the ESP32 and start publishing frames to see your live posture and image.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic posture banner used by JS -->
+        <div class="posture-banner" id="posture-banner" style="display:none" aria-live="polite">
+          <div class="posture-banner-visual">
+            <div class="posture-banner-empty" id="posture-banner-empty" style="display:none">
+              No posture image available
+            </div>
+            <img id="posture-banner-img"
+                 src=""
+                 alt="Current posture illustration"
+                 class="posture-banner-img"
+                 style="display:none">
+          </div>
+
+          <div class="posture-banner-copy">
+            <div class="posture-banner-label-wrap">
+              <span class="posture-banner-label-title">Detected posture</span>
+              <div id="posture-banner-label" class="posture-banner-label">—</div>
+            </div>
+
+            <div class="posture-banner-meta">
+              <div class="posture-meta-chip">
+                <span class="pm-label">Sensor</span>
+                <span class="pm-value" id="posture-source-state">Waiting for MQTT</span>
+              </div>
+              <div class="posture-meta-chip">
+                <span class="pm-label">Stream</span>
+                <span class="pm-value" id="posture-stream-state">No frames yet</span>
+              </div>
+            </div>
+
+            <p class="posture-banner-note" id="posture-banner-note">
+              When the ESP32 sends GOOD, MILD_SLOUCH, SEVERE_SLOUCH, or LEANING_BACK, this area should show the matching label and image.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Calibrate Banner -->
     <div class="calibrate-banner">
       <div class="calibrate-top">
         <div class="calibrate-icon-wrap">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
-            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
           </svg>
         </div>
+
         <div class="calibrate-text">
           <div class="calibrate-title">Calibrate Your Posture</div>
-          <div class="calibrate-subtitle">Sit in your ideal posture and press the button below to set your baseline. This helps the sensor accurately detect when you slouch.</div>
+          <div class="calibrate-subtitle">
+            Sit in your ideal posture and press the button below to set your baseline. This helps the sensor accurately detect when you slouch.
+          </div>
         </div>
       </div>
 
       <div class="posture-guide">
         <div class="guide-label">Posture States Guide:</div>
+
         <div class="guide-cards">
           <div class="guide-card">
             <div class="guide-card-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="9 12 11 14 15 10"/>
               </svg>
               <span class="guide-card-title good">Good Posture</span>
             </div>
             <div class="guide-card-desc">Back straight, shoulders back</div>
           </div>
+
           <div class="guide-card">
             <div class="guide-card-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
@@ -134,10 +215,13 @@
             </div>
             <div class="guide-card-desc">Slight forward lean detected</div>
           </div>
+
           <div class="guide-card">
             <div class="guide-card-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
               <span class="guide-card-title slouching">Severe Slouching</span>
             </div>
@@ -148,8 +232,11 @@
 
       <button class="calibrate-btn" id="cal-btn" onclick="startCalibration()" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-        </svg> Calibrate Good Posture
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        Calibrate Good Posture
       </button>
     </div>
 
@@ -159,42 +246,54 @@
       <div class="card timer-card">
         <div class="timer-circle">
           <svg class="timer-clock-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
           </svg>
-          <div class="timer-value">30m</div>
+          <div class="timer-value" id="timer-display">30:00</div>
           <div class="timer-label">duration</div>
         </div>
-        <button class="start-btn" onclick="startBreak()" type="button">
+
+        <button class="start-btn" id="start-session-btn" onclick="startSession()" type="button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1">
             <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg> Start Session
+          </svg>
+          <span id="start-btn-text">Start Session</span>
+        </button>
+
+        <button class="btn-break" onclick="startBreak()" type="button"
+                style="margin-top: 10px; width: 100%; max-width: 280px; padding: 12px; border-radius: 12px; background: #fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a; cursor: pointer;">
+          Take a Break Now
         </button>
       </div>
 
       <!-- Right Column -->
       <div class="ws-right-col">
-        <!-- Session Settings Card -->
         <div class="card">
           <div class="card-header">
             <div class="card-title-row">
               <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
               <span class="card-title">Session Settings</span>
             </div>
           </div>
+
           <div class="setting-item">
             <div class="setting-left">
-              <div><div class="setting-title">Vibration Alerts</div><div class="setting-desc">Haptic feedback on bad posture</div></div>
+              <div>
+                <div class="setting-title">Vibration Alerts</div>
+                <div class="setting-desc">Haptic feedback on bad posture</div>
+              </div>
             </div>
             <div class="toggle on" role="button" tabindex="0"></div>
           </div>
         </div>
 
-        <!-- Posture Tips Card -->
         <div class="tips-card">
           <div class="tips-header">
-            <span class="tips-bulb">💡</span><span class="tips-title">Posture Tips</span>
+            <span class="tips-bulb">💡</span>
+            <span class="tips-title">Posture Tips</span>
           </div>
           <ul class="tips-list">
             <li>Keep your back straight and shoulders back</li>
@@ -206,20 +305,48 @@
       </div>
     </div>
 
-    <!-- Hidden Analytics Tab (The Matrix) -->
+    <!-- Analytics -->
     <div class="card" style="margin-top: 20px;">
-      <details class="stats-for-nerds">
-        <summary class="sfn-toggle">📊 Advanced Sensor Analytics (Raw ToF Data)</summary>
+      <details class="stats-for-nerds" open>
+        <summary class="sfn-toggle">📊 Advanced Sensor Analytics (Raw ToF Data & Collection)</summary>
+
         <div class="sfn-content">
+          <div class="collection-panel" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+            <h3 class="analytics-title">Dataset Collection</h3>
+            <p class="cal-hint">Hold posture for 1–2 seconds, then press matching label to save to CSV.</p>
+
+            <div class="collect-grid">
+              <button class="btn btn-collect btn-good" onclick="savePosture('GOOD')">Good ✓</button>
+              <button class="btn btn-collect btn-mild" onclick="savePosture('MILD_SLOUCH')">Mild Slouch</button>
+              <button class="btn btn-collect btn-severe" onclick="savePosture('SEVERE_SLOUCH')">Severe !!</button>
+              <button class="btn btn-collect btn-leanback" onclick="savePosture('LEANING_BACK')">Leaning Back</button>
+            </div>
+
+            <div id="collect-status" class="collect-status"></div>
+
+            <div class="dataset-stats" style="display:flex; align-items:center; justify-content:space-between; font-size:0.85rem;">
+              <span>Dataset size: <b id="csv-count" style="color: var(--primary);">0</b> frames</span>
+              <div class="label-counts" id="label-counts"></div>
+            </div>
+          </div>
+
           <div class="analytics-split">
-            <!-- Live Grid & Gradients -->
+            <!-- Live Grid -->
             <div class="analytics-col">
               <h3 class="analytics-title">Live Matrix</h3>
               <div class="badge neutral" id="posture-badge">—</div>
-              <div class="grid8" id="live-grid"></div>
-              <div id="live-matrix" class="tof-grid"></div>
-              
-              <div class="gradient-panel">
+
+              <div class="grid8" id="live-grid" aria-label="Live 8 by 8 sensor matrix">
+                {% for i in range(64) %}
+                  <div class="zone zone-placeholder" data-index="{{ i }}">—</div>
+                {% endfor %}
+              </div>
+
+              <div class="cal-hint" id="live-grid-hint">
+                Waiting for live sensor frames. The 8×8 grid will fill as soon as MQTT data is received.
+              </div>
+
+              <div class="gradient-panel" style="margin-top: 15px;">
                 <div class="gp-section-label">Vertical Gradient</div>
                 <div class="gradient-panel-row">
                   <span class="gp-row-label">Cal</span><b class="gp-val" id="gp-cal-vert">—</b>
@@ -247,16 +374,52 @@
               </div>
             </div>
 
-            <!-- Calibration Data -->
+            <!-- Calibration Grid -->
             <div class="analytics-col">
               <h3 class="analytics-title">Calibration Baseline</h3>
-              <div class="grid8" id="cal-grid"></div>
+
+              <div class="grid8" id="cal-grid" aria-label="Calibration baseline 8 by 8 matrix">
+                {% for i in range(64) %}
+                  <div class="zone zone-placeholder" data-index="{{ i }}">—</div>
+                {% endfor %}
+              </div>
+
+              <div class="cal-hint" id="cal-grid-hint">
+                No calibration baseline yet. Press “Calibrate Good Posture” to populate this 8×8 reference grid.
+              </div>
+
+              <div class="cal-summary" id="cal-gradient-summary" style="display:none; margin-top: 15px;">
+                <div class="gp-section-label">Baseline Metrics</div>
+
+                <div class="gradient-panel-row">
+                  <span class="gp-row-label">Vert Grad</span><b class="gp-val" id="cgs-vert">—</b>
+                </div>
+                <div class="gp-bar-row">
+                  <div class="gp-bar-track">
+                    <div class="gp-bar-fill" id="cgs-bar-vert"></div>
+                  </div>
+                </div>
+
+                <div class="gradient-panel-row" style="margin-top:8px">
+                  <span class="gp-row-label">Mean Dist</span><b class="gp-val" id="cgs-mean-dist">—</b>
+                </div>
+
+                <div class="gradient-panel-row" style="margin-top:4px">
+                  <span class="gp-row-label">Lean Thresh</span><b class="gp-val" id="cgs-leanback-thresh">—</b>
+                </div>
+              </div>
+
+              <div class="legend" style="margin-top: 15px;">
+                <div class="leg"><div class="leg-sq" style="background:#1e293b"></div>Invalid/0</div>
+                <div class="leg"><div class="leg-sq" style="background:#1e3a8a"></div>Far (>60)</div>
+                <div class="leg"><div class="leg-sq" style="background:#065f46"></div>Close (&lt;0)</div>
+                <div class="leg"><div class="leg-sq" style="background:#b91c1c"></div>Very Close (&lt;-60)</div>
+              </div>
             </div>
           </div>
         </div>
       </details>
     </div>
-
   </main>
 
   <script src="/static/work_session.js"></script>
