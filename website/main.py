@@ -97,6 +97,7 @@ system_status = "waiting"
 break_active = False
 break_demo_mode = False
 break_compliance_log = []
+session_active = False
 clients: list[WebSocket] = []
 latest_frame_seq = 0
 
@@ -224,7 +225,20 @@ def get_user_data(user_id: int, conn):
 
 # --- CSV Helpers ---
 def init_csv():
+    needs_reset = False
     if not os.path.exists(CSV_FILE):
+        needs_reset = True
+    else:
+        try:
+            with open(CSV_FILE, "r") as f:
+                existing_headers = next(csv.reader(f), [])
+            if existing_headers != CSV_HEADERS:
+                print(f"[CSV] Schema mismatch ({len(existing_headers)} vs {len(CSV_HEADERS)} cols) — resetting")
+                needs_reset = True
+        except Exception:
+            needs_reset = True
+
+    if needs_reset:
         with open(CSV_FILE, "w", newline="") as f:
             csv.writer(f).writerow(CSV_HEADERS)
 
@@ -262,65 +276,91 @@ def save_to_csv(label: str, frame: dict, cal: dict) -> int:
     return count_csv_rows()
 
 
+def _empty_stats():
+    return {
+        "good_pct": 0,
+        "leaning_pct": 0,
+        "severe_pct": 0,
+        "good_time": "0m",
+        "leaning_time": "0m",
+        "severe_time": "0m",
+        "total_time": "0m",
+        "chart_data": [],
+        "chart_labels": [],
+        "alerts": [],
+    }
+
+
 def get_csv_stats():
-    csv_path = CSV_FILE
-    if not os.path.exists(csv_path):
-        return None
+    if not os.path.exists(CSV_FILE):
+        return _empty_stats()
 
     try:
-        df = pd.read_csv(csv_path)
-        if df.empty:
-            return None
+        df = pd.read_csv(CSV_FILE, on_bad_lines="skip")
+        if df.empty or "timestamp" not in df.columns or "label" not in df.columns:
+            return _empty_stats()
 
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = df.dropna(subset=["timestamp"])
+
+        # Filter to today only
+        today = datetime.now().date()
+        df = df[df["timestamp"].dt.date == today]
+
+        if df.empty:
+            return _empty_stats()
+
         total_rows = len(df)
 
-        good_df = df[df["label"] == "GOOD"]
-        severe_df = df[df["label"] == "SEVERE_SLOUCH"]
+        good_df    = df[df["label"] == "GOOD"]
+        severe_df  = df[df["label"] == "SEVERE_SLOUCH"]
         leaning_df = df[~df["label"].isin(["GOOD", "SEVERE_SLOUCH"])]
 
-        good_pct = round((len(good_df) / total_rows) * 100) if total_rows > 0 else 0
-        leaning_pct = round((len(leaning_df) / total_rows) * 100) if total_rows > 0 else 0
-        severe_pct = round((len(severe_df) / total_rows) * 100) if total_rows > 0 else 0
+        good_pct    = round(len(good_df)    / total_rows * 100) if total_rows else 0
+        leaning_pct = round(len(leaning_df) / total_rows * 100) if total_rows else 0
+        severe_pct  = round(len(severe_df)  / total_rows * 100) if total_rows else 0
 
-        def format_time(seconds):
-            h, m = divmod(seconds // 60, 60)
-            return f"{h}h {m}m" if h > 0 else f"{m}m"
+        def format_time(n_rows):
+            s = int(n_rows)  # 1 row ≈ 1 second
+            if s < 60:
+                return f"{s}s"
+            h, rem = divmod(s, 3600)
+            m = rem // 60
+            if h > 0:
+                return f"{h}h {m}m"
+            return f"{m}m"
 
         df = df.copy()
         df["quality_score"] = df["label"].apply(lambda x: 100 if x == "GOOD" else 0)
         df_resample = df.set_index("timestamp")
         resampled = df_resample["quality_score"].resample("15min").mean().fillna(0)
 
-        timeline = resampled.round().tolist()
-        chart_labels = resampled.index.strftime("%H:%M").tolist()
+        chart_data   = resampled.round().tolist()[-24:]
+        chart_labels = resampled.index.strftime("%H:%M").tolist()[-24:]
 
-        alerts = df[df["label"] != "GOOD"].tail(5).copy()
         alerts_list = []
-        for _, row in alerts.iloc[::-1].iterrows():
-            alerts_list.append(
-                {
-                    "msg": row["label"].replace("_", " ").title(),
-                    "time": row["timestamp"].strftime("%I:%M %p"),
-                    "type": "red" if "SEVERE" in row["label"] else "yellow",
-                }
-            )
+        for _, row in df[df["label"] != "GOOD"].tail(5).iloc[::-1].iterrows():
+            alerts_list.append({
+                "msg":  row["label"].replace("_", " ").title(),
+                "time": row["timestamp"].strftime("%I:%M %p"),
+                "type": "red" if "SEVERE" in row["label"] else "yellow",
+            })
 
         return {
-            "good_pct": good_pct,
-            "leaning_pct": leaning_pct,
-            "severe_pct": severe_pct,
-            "good_time": format_time(len(good_df) * 5),
-            "leaning_time": format_time(len(leaning_df) * 5),
-            "severe_time": format_time(len(severe_df) * 5),
-            "total_time": format_time(total_rows * 5),
-            "chart_data": timeline[-12:],
-            "chart_labels": chart_labels[-12:],
-            "alerts": alerts_list,
+            "good_pct":     good_pct,
+            "leaning_pct":  leaning_pct,
+            "severe_pct":   severe_pct,
+            "good_time":    format_time(len(good_df)),
+            "leaning_time": format_time(len(leaning_df)),
+            "severe_time":  format_time(len(severe_df)),
+            "total_time":   format_time(total_rows),
+            "chart_data":   chart_data,
+            "chart_labels": chart_labels,
+            "alerts":       alerts_list,
         }
     except Exception as e:
         print(f"[CSV] Error processing CSV: {e}")
-        return None
+        return _empty_stats()
 
 
 # --- MQTT Handlers ---
@@ -356,6 +396,17 @@ def on_message(client, userdata, msg):
                 f"[MQTT] Frame #{latest_frame_seq} posture={parsed.get('posture')} "
                 f"vert={parsed.get('vert')} mean={parsed.get('mean')}"
             )
+            if session_active:
+                label = normalize_posture_label(parsed.get("posture", ""))
+                if label in VALID_LABELS:
+                    cal_snap = calibration if calibration is not None else normalize_calibration({})
+                    try:
+                        total = save_to_csv(label, parsed, cal_snap)
+                        print(f"[CSV] Saved frame #{latest_frame_seq} label={label} total={total} cal={'yes' if calibration else 'none'}")
+                    except Exception as csv_err:
+                        print(f"[CSV] Save failed frame #{latest_frame_seq}: {csv_err}")
+                else:
+                    print(f"[CSV] Skipped frame #{latest_frame_seq} — invalid label '{label}'")
 
         elif topic == TOPIC_CAL:
             parsed = json.loads(payload)
@@ -608,6 +659,22 @@ async def trigger_calibrate():
     return {"success": True, "message": "Calibration command sent"}
 
 
+@app.post("/api/session/start")
+async def session_start():
+    global session_active
+    session_active = True
+    print(f"[SESSION] Collection started — calibration={'ready' if calibration else 'MISSING (will use zeros)'}")
+    return {"success": True, "session_active": True}
+
+
+@app.post("/api/session/stop")
+async def session_stop():
+    global session_active
+    session_active = False
+    print(f"[SESSION] Collection stopped — csv rows={count_csv_rows()}")
+    return {"success": True, "session_active": False}
+
+
 @app.post("/api/save-posture")
 async def collect_frame(request: Request):
     frame_snap = copy.deepcopy(last_good_frame or latest_frame)
@@ -645,6 +712,11 @@ async def get_status():
         "break_image": f"/images/{BREAK_IMAGE}",
         "frame_seq": latest_frame_seq,
     }
+
+
+@app.get("/api/dashboard-stats")
+async def dashboard_stats():
+    return get_csv_stats()
 
 
 @app.get("/api/calibration")

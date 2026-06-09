@@ -1,11 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Update live metadata (Date and Greeting)
     updateDashboardMetadata();
-
-    // 2. Initialize Charts with dynamic data from window.DASHBOARD_DATA
-    initCharts();
-
-    // 3. Setup UI interactions
     setupTabListeners();
 });
 
@@ -228,3 +222,142 @@ function initWebSocket() {
 if (sensorDot && sensorStatusText) {
   initWebSocket();
 }
+
+// ════════════════════════════════
+// LIVE STATS REFRESH
+// ════════════════════════════════
+
+let donutChartInstance = null;
+let lineChartInstance  = null;
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function pctColor(pct) {
+  if (pct > 70) return '#22c55e';
+  if (pct > 40) return '#eab308';
+  return '#ef4444';
+}
+
+async function refreshDashboardStats() {
+  try {
+    const res = await fetch('/api/dashboard-stats');
+    if (!res.ok) return;
+    const s = await res.json();
+
+    // Stat cards
+    setText('stat-good-pct',    `${s.good_pct}%`);
+    setText('stat-good-time',   s.good_time);
+    setText('stat-leaning-pct', `${s.leaning_pct}%`);
+    setText('stat-leaning-time',s.leaning_time);
+    setText('stat-severe-pct',  `${s.severe_pct}%`);
+    setText('stat-severe-time', s.severe_time);
+
+    // Donut center label
+    const donutPct = document.getElementById('donut-pct-label');
+    if (donutPct) {
+      donutPct.textContent = `${s.good_pct}%`;
+      donutPct.style.color = pctColor(s.good_pct);
+    }
+
+    // Legend percentages
+    setText('legend-good-pct',    `${s.good_pct}%`);
+    setText('legend-leaning-pct', `${s.leaning_pct}%`);
+    setText('legend-severe-pct',  `${s.severe_pct}%`);
+
+    // Alerts list
+    const alertsEl = document.getElementById('alerts-list');
+    if (alertsEl) {
+      alertsEl.innerHTML = s.alerts.length
+        ? s.alerts.map(a => `
+            <div class="alert-item ${a.type}-bg">
+              <span class="alert-msg">${a.msg}</span>
+              <span class="alert-time">${a.time}</span>
+            </div>`).join('')
+        : '<div class="alert-item" style="color:#9ca3af;font-size:13px;">No alerts today</div>';
+    }
+
+    // Donut chart
+    const donutCtx = document.getElementById('donutChart')?.getContext('2d');
+    if (donutCtx) {
+      if (donutChartInstance) {
+        donutChartInstance.data.datasets[0].data = [s.good_pct, s.leaning_pct, s.severe_pct];
+        donutChartInstance.update();
+      } else {
+        donutChartInstance = new Chart(donutCtx, {
+          type: 'doughnut',
+          data: {
+            datasets: [{
+              data: [s.good_pct, s.leaning_pct, s.severe_pct],
+              backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            cutout: '75%',
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+            animation: { animateRotate: true, duration: 600 }
+          }
+        });
+      }
+    }
+
+    // Line chart
+    const lineCtx = document.getElementById('lineChart')?.getContext('2d');
+    if (lineCtx) {
+      if (lineChartInstance) {
+        lineChartInstance.data.labels = s.chart_labels;
+        lineChartInstance.data.datasets[0].data = s.chart_data;
+        lineChartInstance.update();
+      } else {
+        lineChartInstance = new Chart(lineCtx, {
+          type: 'line',
+          data: {
+            labels: s.chart_labels,
+            datasets: [{
+              label: 'Posture Score',
+              data: s.chart_data,
+              borderColor: '#3B6EF8',
+              borderWidth: 3,
+              pointRadius: 2,
+              tension: 0.4,
+              fill: true,
+              backgroundColor: (ctx) => {
+                const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(59,110,248,0.2)');
+                gradient.addColorStop(1, 'rgba(59,110,248,0)');
+                return gradient;
+              }
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                mode: 'index', intersect: false,
+                backgroundColor: '#fff', titleColor: '#1a2035',
+                bodyColor: '#6b7a99', borderColor: '#e4e8f0', borderWidth: 1,
+                callbacks: { label: ctx => ` Score: ${ctx.parsed.y}%` }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#9aa3b8', font: { size: 11, family: 'DM Sans' } } },
+              y: { min: 0, max: 100, ticks: { stepSize: 25, color: '#9aa3b8', font: { size: 11, family: 'DM Sans' } }, grid: { color: '#f0f2f7' } }
+            }
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[Dashboard] Stats refresh failed:', e);
+  }
+}
+
+// Initial load + poll every 15 seconds
+refreshDashboardStats();
+setInterval(refreshDashboardStats, 15000);

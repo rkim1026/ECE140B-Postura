@@ -85,19 +85,19 @@
     </header>
 
     <div class="stat-cards">
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-dot green"></span><span class="stat-pct green">{{ stats.good_pct }}%</span></div>
-        <div class="stat-value">{{ stats.good_time }}</div>
+      <div class="stat-card" id="stat-card-good">
+        <div class="stat-top"><span class="stat-dot green"></span><span class="stat-pct green" id="stat-good-pct">{{ (stats.good_pct if stats else 0) }}%</span></div>
+        <div class="stat-value" id="stat-good-time">{{ stats.good_time if stats else '0m' }}</div>
         <div class="stat-label">Good Posture</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-dot yellow"></span><span class="stat-pct yellow">{{ stats.leaning_pct }}%</span></div>
-        <div class="stat-value">{{ stats.leaning_time }}</div>
+      <div class="stat-card" id="stat-card-leaning">
+        <div class="stat-top"><span class="stat-dot yellow"></span><span class="stat-pct yellow" id="stat-leaning-pct">{{ (stats.leaning_pct if stats else 0) }}%</span></div>
+        <div class="stat-value" id="stat-leaning-time">{{ stats.leaning_time if stats else '0m' }}</div>
         <div class="stat-label">Leaning</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-dot red"></span><span class="stat-pct red">{{ stats.severe_pct }}%</span></div>
-        <div class="stat-value">{{ stats.severe_time }}</div>
+      <div class="stat-card" id="stat-card-severe">
+        <div class="stat-top"><span class="stat-dot red"></span><span class="stat-pct red" id="stat-severe-pct">{{ (stats.severe_pct if stats else 0) }}%</span></div>
+        <div class="stat-value" id="stat-severe-time">{{ stats.severe_time if stats else '0m' }}</div>
         <div class="stat-label">Severe Slouch</div>
       </div>
     </div>
@@ -112,7 +112,7 @@
         <div class="donut-wrap">
           <canvas id="donutChart" width="160" height="160"></canvas>
           <div class="donut-label">
-            <div class="donut-pct" style="color: {% if stats.good_pct > 70 %}#22c55e{% elif stats.good_pct > 40 %}#eab308{% else %}#ef4444{% endif %};">
+            <div class="donut-pct" id="donut-pct-label" style="color: {% if stats and stats.good_pct > 70 %}#22c55e{% elif stats and stats.good_pct > 40 %}#eab308{% else %}#ef4444{% endif %};">
               {{ stats.good_pct if stats else 0 }}%
             </div>
             <div class="donut-sub">Good Posture</div>
@@ -121,15 +121,15 @@
         <div class="legend">
           <div class="legend-row">
               <span class="leg-dot green"></span> Good Posture 
-              <span class="leg-val">{{ stats.good_pct if stats else 0 }}%</span>
+              <span class="leg-val" id="legend-good-pct">{{ stats.good_pct if stats else 0 }}%</span>
           </div>
           <div class="legend-row">
               <span class="leg-dot yellow"></span> Leaning 
-              <span class="leg-val">{{ stats.leaning_pct if stats else 0 }}%</span>
+              <span class="leg-val" id="legend-leaning-pct">{{ stats.leaning_pct if stats else 0 }}%</span>
           </div>
           <div class="legend-row">
               <span class="leg-dot red"></span> Severe 
-              <span class="leg-val">{{ stats.severe_pct if stats else 0 }}%</span>
+              <span class="leg-val" id="legend-severe-pct">{{ stats.severe_pct if stats else 0 }}%</span>
           </div>
         </div>
       </div>
@@ -155,8 +155,8 @@
           <span class="card-title">Recent Alerts <span class="badge-count">5 today</span></span>
           <a href="/summary" class="view-all">View all ›</a>
         </div>
-        <div class="alerts-list">
-          {% for alert in stats.alerts %}
+        <div class="alerts-list" id="alerts-list">
+          {% for alert in (stats.alerts if stats else []) %}
           <div class="alert-item {{ alert.type }}-bg">
             <span class="alert-msg">{{ alert.msg }}</span>
             <span class="alert-time">{{ alert.time }}</span>

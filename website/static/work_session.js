@@ -630,7 +630,7 @@ function closeTip() {
 
 // ── Session Timer Logic ───────────────────────────────────
 let sessionTimerInterval = null;
-let sessionSecondsLeft = 5;
+let sessionSecondsLeft = 30;
 let isSessionActive = false;
 
 function updateTimerDisplay() {
@@ -653,12 +653,18 @@ function startSession() {
     isSessionActive = false;
     btnText.textContent = "Resume Session";
     btn.style.background = "linear-gradient(135deg, #4f6ef7 0%, #3730c4 100%)";
+    fetch("/api/session/stop", { method: "POST" })
+      .then(r => r.json()).then(d => console.log("[Session] stopped", d))
+      .catch(e => console.error("[Session] stop failed", e));
     return;
   }
 
   isSessionActive = true;
   btnText.textContent = "Pause Session";
   btn.style.background = "#ef4444";
+  fetch("/api/session/start", { method: "POST" })
+    .then(r => r.json()).then(d => console.log("[Session] started", d))
+    .catch(e => console.error("[Session] start failed", e));
 
   sessionTimerInterval = setInterval(() => {
     if (sessionSecondsLeft > 0) {
@@ -671,8 +677,11 @@ function startSession() {
     isSessionActive = false;
     btnText.textContent = "Start Session";
     btn.style.background = "linear-gradient(135deg, #4f6ef7 0%, #3730c4 100%)";
-    sessionSecondsLeft = 5;
+    sessionSecondsLeft = 30;
     updateTimerDisplay();
+    fetch("/api/session/stop", { method: "POST" })
+      .then(r => r.json()).then(d => console.log("[Session] auto-stopped", d))
+      .catch(e => console.error("[Session] auto-stop failed", e));
     startBreak();
   }, 1000);
 }
